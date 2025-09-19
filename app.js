@@ -1,6 +1,6 @@
 // --- PENTING: Untuk keperluan demonstrasi, API Key diletakkan di sini. ---
 // --- UNTUK PRODUKSI, SANGAT DISARANKAN MENGGUNAKAN SERVERLESS FUNCTION SEBAGAI PROXY UNTUK KEAMANAN. ---
-const UBERDUCK_API_KEY = "2ba20ba477daa3a0112f4d2cb54d338f25feb101219d0a055602e9fb972ea4a685bf7b92ccd438a824646cebde99d4ab"; // <<< GANTI DENGAN API Key Uberduck Anda di sini!
+const UBERDUCK_API_KEY = "ab68368e6200cdda39ca9e06fc0ccf8f0d19a25e78dff0b3fd5da35773e1fd51314c0bb510650f579722ac3f8ac04da1"; // <<< GANTI DENGAN API Key Uberduck Anda di sini!
 
 // Berdasarkan dokumentasi, autentikasi menggunakan Bearer Token
 const BEARER_TOKEN = UBERDUCK_API_KEY;
