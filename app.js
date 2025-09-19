@@ -37,7 +37,8 @@ async function loadVoices() {
     generateButton.disabled = true; // Nonaktifkan juga tombol generate saat memuat
 
     try {
-        if (!BEARER_TOKEN || BEARER_TOKEN === "YOUR_UBERDUCK_API_KEY") { // Cek placeholder API key
+        // Pengecekan API Key placeholder
+        if (!BEARER_TOKEN || BEARER_TOKEN === "YOUR_UBERDUCK_API_KEY") {
             throw new Error('API Key Uberduck belum disetel. Harap ganti "YOUR_UBERDUCK_API_KEY" di app.js.');
         }
 
@@ -50,7 +51,7 @@ async function loadVoices() {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
+            const errorData = await response.json().catch(() => ({ message: "Tidak dapat mem-parse respons error sebagai JSON." }));
             // Cek jika error 401 Unauthorized
             if (response.status === 401) {
                 throw new Error(`Unauthorized: API Key Anda mungkin tidak valid atau tidak memiliki izin. (${JSON.stringify(errorData)})`);
@@ -72,9 +73,8 @@ async function loadVoices() {
         console.log("Detail semua suara dari API (perhatikan properti 'name', 'display_name', 'voicemodel_uuid', 'category'):", allVoices);
 
         // =====================================================================
-        // PERUBAHAN UTAMA: MENGGUNAKAN properti yang BENAR
-        // 'name' di objek suara API Uberduck yang Anda dapatkan adalah 'voicemodel_uuid'.
-        // 'category' seringkali tidak ada atau null, jadi kita bisa menggunakan string kosong
+        // PERUBAHAN UTAMA: MENGHAPUS FILTER KATEGORI SEMENTARA
+        // Ini akan memungkinkan semua suara dimuat ke dropdown
         // =====================================================================
         const voicesToDisplay = [];
         allVoices.forEach(voice => {
@@ -131,7 +131,8 @@ async function generateSpeech() {
     const text = textInput.value.trim();
     const selectedVoice = voiceSelect.value; // selectedVoice akan berisi voice.name (yaitu voicemodel_uuid)
 
-    if (!BEARER_TOKEN || BEARER_TOKEN === "YOUR_UBERDUCK_API_KEY") { // Cek placeholder API key
+    // Pengecekan API Key placeholder
+    if (!BEARER_TOKEN || BEARER_TOKEN === "YOUR_UBERDUCK_API_KEY") {
         showStatus('Harap ganti "YOUR_UBERDUCK_API_KEY" di app.js dengan API Key Anda yang sebenarnya.', 'error');
         return;
     }
@@ -152,6 +153,10 @@ async function generateSpeech() {
     audioPlayer.load(); // Memuat ulang audio player
 
     try {
+        console.log("Mengirim permintaan text-to-speech ke Uberduck...");
+        console.log("Teks:", text);
+        console.log("Suara yang dipilih:", selectedVoice);
+
         const response = await fetch('https://api.uberduck.ai/v1/text-to-speech', {
             method: 'POST',
             headers: {
@@ -167,19 +172,28 @@ async function generateSpeech() {
             })
         });
 
+        // Debugging: Log status response sebelum cek response.ok
+        console.log("Uberduck text-to-speech API Response Status:", response.status, response.statusText);
+
         if (!response.ok) {
-            const errorData = await response.json();
+            // Jika ada error di response (bukan 200 OK)
+            const errorData = await response.json().catch(() => ({ message: "Tidak dapat mem-parse respons error sebagai JSON." }));
+            // Debugging: Log error data dari API
+            console.error("Uberduck text-to-speech API Error Data (response not OK):", errorData);
             if (response.status === 401) {
                 throw new Error(`Unauthorized: API Key Anda mungkin tidak valid atau tidak memiliki izin. (${JSON.stringify(errorData)})`);
             }
             if (response.status === 400 && errorData.detail && errorData.detail.includes("exceeds the maximum character limit")) {
                 throw new Error(`Teks terlalu panjang. Batas maksimal teks mungkin telah terlampaui.`);
             }
-            throw new Error(`Uberduck API error: ${response.status} - ${JSON.stringify(errorData)}`);
+            throw new Error(`Uberduck API error: ${response.status} - ${JSON_stringify(errorData)}`);
         }
 
         const data = await response.json();
-        if (data.uuid) {
+        // Debugging: Log data yang diterima dari API sebelum cek UUID
+        console.log("Uberduck text-to-speech API Success Data:", data);
+
+        if (data.uuid) { // Baris 193
             const audioUrl = await pollForAudio(data.uuid);
             if (audioUrl) {
                 audioPlayer.src = audioUrl;
@@ -190,6 +204,8 @@ async function generateSpeech() {
                 showStatus('Gagal mendapatkan URL audio setelah beberapa percobaan.', 'error');
             }
         } else {
+            // Debugging: Log kenapa UUID tidak ditemukan
+            console.error("UUID tidak ditemukan di respons Uberduck:", data);
             throw new Error('Respons API tidak mengandung UUID untuk polling.');
         }
 
