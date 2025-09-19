@@ -50,13 +50,13 @@ async function loadVoices() {
         }
 
         const apiResponse = await response.json(); // Ubah nama variabel untuk lebih jelas
-        console.log("Uberduck voices API response:", apiResponse);
-
+        console.log("Uberduck voices API response:", apiResponse); // console.log yang Anda lihat tadi
+        
         // Ambil array suara dari properti 'voices' di dalam objek respons
-        const allVoices = apiResponse.voices; // <--- PERUBAHAN UTAMA DI SINI
-
-        if (!Array.isArray(allVoices)) {
-            throw new TypeError("Data 'voices' dalam respons API Uberduck bukan array.");
+        const allVoices = apiResponse.voices; // <--- PASTIKAN BARIS INI ADA!
+        
+        if (!Array.isArray(allVoices)) { // Pengecekan tambahan untuk memastikan itu array
+            throw new TypeError("Data 'voices' dalam respons API Uberduck bukan array seperti yang diharapkan.");
         }
 
         // Filter suara yang bisa digunakan untuk text-to-speech, voice_conversion, atau singing
@@ -82,7 +82,6 @@ async function loadVoices() {
 }
 
 // ... (sisa script.js tidak berubah) ...
-
 // Fungsi untuk menghasilkan suara dari teks menggunakan Uberduck API
 async function generateSpeech() {
     const text = textInput.value.trim();
