@@ -73,25 +73,19 @@ async function loadVoices() {
         console.log("Detail semua suara dari API (perhatikan properti 'name', 'display_name', 'voicemodel_uuid', 'category'):", allVoices);
 
         // =====================================================================
-        // PERUBAHAN UTAMA: MENGHAPUS FILTER KATEGORI SEMENTARA
-        // Ini akan memungkinkan semua suara dimuat ke dropdown
+        // MENGHAPUS FILTER KATEGORI SEMENTARA: Akan memuat semua suara ke dropdown
+        // Gunakan filter di sini jika ingin hanya kategori tertentu
+        // Contoh: const voicesToDisplay = allVoices.filter(v => v.category === 'tts' || v.category === 'voice_conversion');
         // =====================================================================
         const voicesToDisplay = [];
         allVoices.forEach(voice => {
-            // Pastikan properti yang dibutuhkan ada dan valid
-            // voice.name akan kita ganti dengan voice.voicemodel_uuid.
-            // voice.category tampaknya tidak selalu ada di API Uberduck untuk semua suara.
-            // Kita bisa tambahkan filter lagi di sini jika ingin hanya suara dengan kategori tertentu.
-            // Contoh: if (voice.voicemodel_uuid && voice.display_name && voice.category === 'tts') { ... }
-
-            if (voice.voicemodel_uuid && voice.display_name) { // Hanya tambahkan jika voicemodel_uuid dan display_name ada
+            if (voice.voicemodel_uuid && voice.display_name) {
                 voicesToDisplay.push({
                     name: voice.voicemodel_uuid, // Gunakan voicemodel_uuid sebagai nilai 'name' untuk HTML value
                     display_name: voice.display_name,
                     category: voice.category || 'unknown' // Jika category tidak ada, gunakan 'unknown'
                 });
             } else {
-                // Log peringatan jika ada suara yang tidak memiliki properti dasar
                 console.warn("Suara dengan format tidak lengkap diabaikan (kurang 'voicemodel_uuid' atau 'display_name'):", voice);
             }
         });
@@ -164,8 +158,11 @@ async function generateSpeech() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                text: text,
-                voice: selectedVoice
+                text: text, // Sesuai dengan contoh cURL di dokumentasi Uberduck
+                voice: selectedVoice // selectedVoice akan berisi voicemodel_uuid, ini yang dikirim ke API
+                // Anda juga bisa menambahkan "model": "polly_neural" jika diperlukan
+                // atau parameter lain dari dokumentasi, misalnya:
+                // "model": "uberduck_v2"
             })
         };
         console.log("LANGKAH 2: Opsi Fetch:", fetchOptions);
@@ -173,7 +170,6 @@ async function generateSpeech() {
         const response = await fetch('https://api.uberduck.ai/v1/text-to-speech', fetchOptions);
 
         console.log("LANGKAH 3: Respons HTTP dari Uberduck API (status):", response.status, response.statusText);
-        console.log("LANGKAH 4: response.ok adalah:", response.ok);
 
         if (!response.ok) {
             // Jika ada error di response (bukan 200 OK)
@@ -193,40 +189,48 @@ async function generateSpeech() {
             if (response.status === 400 && errorData.detail && errorData.detail.includes("exceeds the maximum character limit")) {
                 throw new Error(`Teks terlalu panjang. Batas maksimal teks mungkin telah terlampaui.`);
             }
-            throw new Error(`Uberduck API error: ${response.status} - ${JSON.stringify(errorData)}`);
+            throw new Error(`Uberduck API error: ${response.status} - ${JSON_stringify(errorData)}`);
         }
 
         // Jika responsnya OK (status 200)
         console.log("LANGKAH 5c: Respons HTTP OK. Memproses data sukses.");
-// ... (di dalam fungsi generateSpeech) ...
+        const data = await response.json();
+        console.log("LANGKAH 6: Uberduck text-to-speech API Success Data:", data); // <<< LOG INI SANGAT PENTING
 
-const data = await response.json();
-console.log("LANGKAH 6: Uberduck text-to-speech API Success Data:", data);
+        // =====================================================================
+        // PERBAIKAN KRITIS DI SINI: TIDAK LAGI MENGANDALKAN UUID UNTUK POLLING
+        // API sekarang langsung mengembalikan audio_url
+        // =====================================================================
+        if (data.audio_url) { // Cek apakah audio_url tersedia
+            console.log("LANGKAH 7: Audio URL ditemukan, langsung memutar.");
+            const audioUrl = data.audio_url; // Langsung ambil audio_url dari respons
 
-// =====================================================================
-// PERUBAHAN KRITIS DI SINI: TIDAK LAGI MENGANDALKAN UUID UNTUK POLLING
-// API sekarang langsung mengembalikan audio_url
-// =====================================================================
-if (data.audio_url) { // Cek apakah audio_url tersedia
-    console.log("LANGKAH 7: Audio URL ditemukan, langsung memutar.");
-    const audioUrl = data.audio_url; // Langsung ambil audio_url dari respons
+            audioPlayer.src = audioUrl;
+            audioPlayer.play();
+            audioUrlDisplay.textContent = `URL Audio: ${audioUrl}`;
+            showStatus('Audio berhasil dibuat dan sedang diputar!', 'success');
+        } else {
+            // Debugging: Log kenapa audio_url tidak ditemukan
+            console.error("LANGKAH 7: Audio URL tidak ditemukan di respons Uberduck:", data);
+            throw new Error('Respons API tidak mengandung audio_url yang diharapkan.');
+        }
 
-    audioPlayer.src = audioUrl;
-    audioPlayer.play();
-    audioUrlDisplay.textContent = `URL Audio: ${audioUrl}`;
-    showStatus('Audio berhasil dibuat dan sedang diputar!', 'success');
-} else {
-    console.error("LANGKAH 7: Audio URL tidak ditemukan di respons Uberduck:", data);
-    throw new Error('Respons API tidak mengandung audio_url yang diharapkan.');
+    } catch (error) {
+        console.error('Error generating Uberduck speech:', error);
+        showStatus(`Terjadi kesalahan: ${error.message}`, 'error');
+    } finally {
+        generateButton.disabled = false;
+    }
 }
 
-} catch (error) {
-// ... (sisa fungsi generateSpeech dan fungsi pollForAudio bisa dihapus atau dikomentari jika tidak lagi digunakan) ...
-// Fungsi untuk polling status audio
+// =====================================================================
+// FUNGSI pollForAudio TIDAK LAGI DIBUTUHKAN, BISA DIHAPUS/DIKOMENTARI
+// =====================================================================
+/*
 async function pollForAudio(uuid) {
     let attempts = 0;
-    const maxAttempts = 30; // Batas percobaan lebih banyak untuk stabilitas (30 * 3 detik = 90 detik)
-    const delay = 3000; // Tunggu 3 detik setiap percobaan
+    const maxAttempts = 30;
+    const delay = 3000;
 
     while (attempts < maxAttempts) {
         attempts++;
@@ -242,25 +246,23 @@ async function pollForAudio(uuid) {
 
             if (!response.ok) {
                 // Jangan lempar error di sini, biarkan terus polling jika bukan 404/500
-                // Cek jika ada status spesifik yang menunjukkan kegagalan permanen
-                // Untuk sementara, kita biarkan saja dan lanjutkan polling
             }
 
             const statusData = await response.json();
             if (statusData.finished && statusData.path) {
-                return statusData.path; // Audio sudah siap, kembalikan URL
+                return statusData.path;
             } else if (statusData.failed) {
                 showStatus('Generasi audio gagal di Uberduck.', 'error');
                 return null;
             }
         } catch (error) {
             console.error('Error during polling:', error);
-            // Lanjutkan polling meskipun ada error sementara
         }
-        await new Promise(resolve => setTimeout(resolve, delay)); // Tunggu sebelum percobaan berikutnya
+        await new Promise(resolve => setTimeout(resolve, delay));
     }
-    return null; // Gagal mendapatkan audio setelah maxAttempts
+    return null;
 }
+*/
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
