@@ -31,6 +31,8 @@ function hideStatus() {
 
 // ... (bagian atas script.js) ...
 
+// ... (bagian atas script.js) ...
+
 // Fungsi untuk memuat daftar suara dari Uberduck API
 async function loadVoices() {
     showStatus('Memuat daftar suara...', 'info');
@@ -50,11 +52,27 @@ async function loadVoices() {
         }
 
         const voices = await response.json();
-        console.log("Uberduck voices API response:", voices); // <--- TAMBAHKAN BARIS INI
+        console.log("Uberduck voices API response:", voices); // <--- Sekarang di sini
+
+        // Kita akan melakukan pengecekan di sini
+        if (!Array.isArray(voices)) {
+            console.error("Respons API Uberduck untuk voices bukan array:", voices);
+            // Coba untuk menemukan array suara di dalam objek respons
+            // Misalnya, jika responsnya { data: [...] } atau { results: [...] }
+            if (voices && typeof voices === 'object' && voices.data && Array.isArray(voices.data)) {
+                voices = voices.data; // Gunakan array yang ditemukan
+                console.log("Menggunakan voices.data sebagai array suara:", voices);
+            } else if (voices && typeof voices === 'object' && voices.results && Array.isArray(voices.results)) {
+                voices = voices.results; // Atau voices.results
+                console.log("Menggunakan voices.results sebagai array suara:", voices);
+            } else {
+                throw new TypeError("Respons API Uberduck untuk /v1/voices tidak mengembalikan array suara yang diharapkan.");
+            }
+        }
+
 
         // Filter suara yang bisa digunakan untuk text-to-speech, voice_conversion, atau singing
-        // Anda bisa memfilter lebih spesifik jika hanya ingin kategori tertentu
-        const ttsVoices = voices.filter(v => // Error terjadi di baris ini
+        const ttsVoices = voices.filter(v => // <--- Error terjadi di baris ini (sekarang baris 70 atau 71)
             v.category === 'tts' || v.category === 'voice_conversion' || v.category === 'singing'
         );
 
@@ -75,6 +93,7 @@ async function loadVoices() {
     }
 }
 
+// ... (bagian bawah script.js) ...
 // ... (bagian bawah script.js) ...
 
 // Fungsi untuk menghasilkan suara dari teks menggunakan Uberduck API
