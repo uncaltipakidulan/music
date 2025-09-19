@@ -68,18 +68,29 @@ async function loadVoices() {
             throw new TypeError("Properti 'voices' dalam respons API Uberduck bukan array seperti yang diharapkan.");
         }
 
-        // Filter suara yang bisa digunakan untuk text-to-speech, voice_conversion, atau singing
+        console.log("Jumlah total suara dari API:", allVoices.length); // Debugging: Log jumlah total suara
+
         const ttsVoices = allVoices.filter(v =>
             v.category === 'tts' || v.category === 'voice_conversion' || v.category === 'singing'
         );
 
+        console.log("Jumlah suara setelah filter (tts/voice_conversion/singing):", ttsVoices.length); // Debugging: Log jumlah suara setelah filter
+
         voiceSelect.innerHTML = '<option value="">-- Pilih Suara --</option>'; // Opsi default
-        ttsVoices.sort((a, b) => a.display_name.localeCompare(b.display_name)); // Urutkan berdasarkan nama
+
+        if (ttsVoices.length === 0) {
+            voiceSelect.innerHTML += '<option value="">Tidak ada suara kategori yang tersedia</option>';
+            throw new Error('Tidak ada suara kategori TTS/Voice Conversion/Singing yang ditemukan dengan API Key ini.');
+        }
+
+        ttsVoices.sort((a, b) => a.display_name.localeCompare(b.display_name));
         ttsVoices.forEach(voice => {
             const option = document.createElement('option');
             option.value = voice.name;
             option.textContent = `${voice.display_name} (${voice.category})`;
             voiceSelect.appendChild(option);
+            // Untuk debugging, bisa aktifkan ini untuk melihat setiap opsi yang ditambahkan:
+            // console.log("Menambahkan opsi suara:", option.textContent);
         });
         
         voiceSelect.disabled = false; // Aktifkan dropdown setelah suara dimuat
@@ -89,7 +100,7 @@ async function loadVoices() {
     } catch (error) {
         console.error('Error loading voices:', error);
         showStatus(`Gagal memuat suara: ${error.message}. Pastikan API Key benar & jaringan tersedia.`, 'error');
-        voiceSelect.innerHTML = '<option value="">Gagal memuat suara</option>';
+        voiceSelect.innerHTML = '<option value="">Gagal memuat suara</option>'; // Opsional: tampilkan pesan error di dropdown
         voiceSelect.disabled = true; // Nonaktifkan dropdown jika gagal
         generateButton.disabled = true; // Nonaktifkan tombol generate jika gagal
     }
