@@ -47,24 +47,21 @@ async function loadVoices() {
             throw new Error(`Gagal memuat suara: ${response.status} - ${JSON.stringify(errorData)}`);
         }
 
-        const apiResponse = await response.json(); // Ini akan menjadi Object { total: 1069, voices: (...) }
-        console.log("Uberduck voices API response:", apiResponse);
+        const apiResponse = await response.json();
+        console.log("Uberduck voices API response:", apiResponse); // Debugging: log seluruh respons API
 
-        // Ambil array suara dari properti 'voices' di dalam objek respons
-        const allVoices = apiResponse.voices; // <--- INI PENTING! Sekarang allVoices adalah array
+        const allVoices = apiResponse.voices; // Ambil array suara dari properti 'voices'
 
         if (!Array.isArray(allVoices)) {
-            // Ini akan menangkap error jika ternyata apiResponse.voices bukan array
             throw new TypeError("Properti 'voices' dalam respons API Uberduck bukan array.");
         }
 
-        // Filter suara yang bisa digunakan untuk text-to-speech, voice_conversion, atau singing
-        const ttsVoices = allVoices.filter(v => // Sekarang .filter akan dipanggil pada array 'allVoices'
+        const ttsVoices = allVoices.filter(v =>
             v.category === 'tts' || v.category === 'voice_conversion' || v.category === 'singing'
         );
 
         voiceSelect.innerHTML = '<option value="">-- Pilih Suara --</option>'; // Opsi default
-        ttsVoices.sort((a, b) => a.display_name.localeCompare(b.display_name)); // Urutkan berdasarkan nama
+        ttsVoices.sort((a, b) => a.display_name.localeCompare(b.display_name)); // Urutkan
         ttsVoices.forEach(voice => {
             const option = document.createElement('option');
             option.value = voice.name;
@@ -72,11 +69,13 @@ async function loadVoices() {
             voiceSelect.appendChild(option);
         });
         hideStatus();
+        generateButton.disabled = false; // <<< PENTING: PASTIKAN TOMBOL GENERATE AKTIF LAGI
     } catch (error) {
         console.error('Error loading voices:', error);
-        showStatus(`Gagal memuat suara: ${error.message}. Pastikan API Key benar dan jaringan tersedia.`, 'error');
-        voiceSelect.innerHTML = '<option value="">Gagal memuat suara</option>';
-        generateButton.disabled = true;
+        showStatus(`Gagal memuat suara: ${error.message}. Coba refresh halaman.`, 'error');
+        // <<< JANGAN NONAKTIFKAN voiceSelect atau generateButton di sini jika terjadi error loading
+        voiceSelect.innerHTML = '<option value="">Gagal memuat suara</option>'; // Biarkan opsi error ini sebagai satu-satunya
+        generateButton.disabled = true; // Nonaktifkan tombol generate saja
     }
 }
 
