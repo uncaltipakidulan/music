@@ -3,7 +3,7 @@
 const UBERDUCK_API_KEY = "2ba20ba477daa3a0112f4d2cb54d338f25feb101219d0a055602e9fb972ea4a685bf7b92ccd438a824646cebde99d4ab"; // <<< GANTI DENGAN API Key Uberduck Anda di sini!
 
 // Berdasarkan dokumentasi, autentikasi menggunakan Bearer Token
-const BEARER_TOKEN = UBERDUCK_API_KEY;
+const BEARER_TOKEN = 2ba20ba477daa3a0112f4d2cb54d338f25feb101219d0a055602e9fb972ea4a685bf7b92ccd438a824646cebde99d4ab;
 
 // DOM Elements
 const textInput = document.getElementById('textInput');
