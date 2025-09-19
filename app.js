@@ -198,35 +198,30 @@ async function generateSpeech() {
 
         // Jika responsnya OK (status 200)
         console.log("LANGKAH 5c: Respons HTTP OK. Memproses data sukses.");
-        const data = await response.json();
-        console.log("LANGKAH 6: Uberduck text-to-speech API Success Data:", data); // <<< LOG INI SANGAT PENTING
+// ... (di dalam fungsi generateSpeech) ...
 
-        if (data.uuid) { // Baris 193 di skrip sebelumnya
-            console.log("LANGKAH 7: UUID ditemukan, memulai polling.");
-            const audioUrl = await pollForAudio(data.uuid);
-            if (audioUrl) {
-                console.log("LANGKAH 8: Audio URL ditemukan:", audioUrl);
-                audioPlayer.src = audioUrl;
-                audioPlayer.play();
-                audioUrlDisplay.textContent = `URL Audio: ${audioUrl}`;
-                showStatus('Audio berhasil dibuat dan sedang diputar!', 'success');
-            } else {
-                showStatus('Gagal mendapatkan URL audio setelah beberapa percobaan.', 'error');
-            }
-        } else {
-            // Debugging: Log kenapa UUID tidak ditemukan
-            console.error("LANGKAH 7: UUID tidak ditemukan di respons Uberduck:", data);
-            throw new Error('Respons API tidak mengandung UUID untuk polling.');
-        }
+const data = await response.json();
+console.log("LANGKAH 6: Uberduck text-to-speech API Success Data:", data);
 
-    } catch (error) {
-        console.error('Error generating Uberduck speech:', error);
-        showStatus(`Terjadi kesalahan: ${error.message}`, 'error');
-    } finally {
-        generateButton.disabled = false;
-    }
+// =====================================================================
+// PERUBAHAN KRITIS DI SINI: TIDAK LAGI MENGANDALKAN UUID UNTUK POLLING
+// API sekarang langsung mengembalikan audio_url
+// =====================================================================
+if (data.audio_url) { // Cek apakah audio_url tersedia
+    console.log("LANGKAH 7: Audio URL ditemukan, langsung memutar.");
+    const audioUrl = data.audio_url; // Langsung ambil audio_url dari respons
+
+    audioPlayer.src = audioUrl;
+    audioPlayer.play();
+    audioUrlDisplay.textContent = `URL Audio: ${audioUrl}`;
+    showStatus('Audio berhasil dibuat dan sedang diputar!', 'success');
+} else {
+    console.error("LANGKAH 7: Audio URL tidak ditemukan di respons Uberduck:", data);
+    throw new Error('Respons API tidak mengandung audio_url yang diharapkan.');
 }
 
+} catch (error) {
+// ... (sisa fungsi generateSpeech dan fungsi pollForAudio bisa dihapus atau dikomentari jika tidak lagi digunakan) ...
 // Fungsi untuk polling status audio
 async function pollForAudio(uuid) {
     let attempts = 0;
