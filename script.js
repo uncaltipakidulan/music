@@ -29,6 +29,8 @@ function hideStatus() {
     statusMessage.style.display = 'none';
 }
 
+// ... (bagian atas script.js) ...
+
 // Fungsi untuk memuat daftar suara dari Uberduck API
 async function loadVoices() {
     showStatus('Memuat daftar suara...', 'info');
@@ -48,9 +50,11 @@ async function loadVoices() {
         }
 
         const voices = await response.json();
+        console.log("Uberduck voices API response:", voices); // <--- TAMBAHKAN BARIS INI
+
         // Filter suara yang bisa digunakan untuk text-to-speech, voice_conversion, atau singing
         // Anda bisa memfilter lebih spesifik jika hanya ingin kategori tertentu
-        const ttsVoices = voices.filter(v => 
+        const ttsVoices = voices.filter(v => // Error terjadi di baris ini
             v.category === 'tts' || v.category === 'voice_conversion' || v.category === 'singing'
         );
 
@@ -67,9 +71,11 @@ async function loadVoices() {
         console.error('Error loading voices:', error);
         showStatus(`Gagal memuat suara: ${error.message}. Pastikan API Key benar dan jaringan tersedia.`, 'error');
         voiceSelect.innerHTML = '<option value="">Gagal memuat suara</option>';
-        generateButton.disabled = true; // Nonaktifkan tombol jika gagal memuat suara
+        generateButton.disabled = true;
     }
 }
+
+// ... (bagian bawah script.js) ...
 
 // Fungsi untuk menghasilkan suara dari teks menggunakan Uberduck API
 async function generateSpeech() {
