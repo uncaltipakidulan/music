@@ -1,6 +1,7 @@
 // --- PENTING: Untuk keperluan demonstrasi, API Key diletakkan di sini. ---
 // --- UNTUK PRODUKSI, SANGAT DISARANKAN MENGGUNAKAN SERVERLESS FUNCTION SEBAGAI PROXY UNTUK KEAMANAN. ---
-const UBERDUCK_API_KEY = "bb622df48638253bf341e93208407317965e35b8fe1015ae6faf2dacbd051f59a0f46051a83cfb1a219e78fcf295a913"; // <<< GANTI DENGAN API Key Uberduck Anda di sini!
+const UBERDUCK_API_KEY = "bb622df48638253bf341e93208407317965e35b8fe1015ae6faf2dacbd051f59a0f46051a83cfb1a219e78fcf295a913
+"; // <<< GANTI DENGAN API Key Uberduck Anda di sini!
 
 // Berdasarkan dokumentasi, autentikasi menggunakan Bearer Token
 const BEARER_TOKEN = UBERDUCK_API_KEY;
@@ -71,29 +72,34 @@ async function loadVoices() {
         console.log("Jumlah total suara dari API:", allVoices.length); // Debugging: Log jumlah total suara
         console.log("Detail semua suara dari API (periksa properti 'category' dan 'display_name'):", allVoices); // <<< PENTING: LOG INI AKAN MENAMPILKAN DATA MENTAH
 
-        const ttsVoices = allVoices.filter(v =>
-            // Filter ini adalah target debugging kita. Mungkin kategori ini tidak ada di API Key Anda.
-            v.category === 'tts' || v.category === 'voice_conversion' || v.category === 'singing'
-        );
+        // =====================================================================
+        // PERUBAHAN UTAMA: MENGHAPUS FILTER KATEGORI SEMENTARA
+        // Ini akan memungkinkan semua suara dimuat ke dropdown
+        // =====================================================================
+        const ttsVoices = allVoices; // Sekarang ini akan mengambil SEMUA suara tanpa filter kategori.
 
-        console.log("Jumlah suara setelah filter (tts/voice_conversion/singing):", ttsVoices.length); // Debugging: Log jumlah suara setelah filter
+        console.log("Jumlah suara setelah filter (saat ini tanpa filter kategori):", ttsVoices.length); // Debugging: Log jumlah suara setelah filter
 
         voiceSelect.innerHTML = '<option value="">-- Pilih Suara --</option>'; // Opsi default
 
         if (ttsVoices.length === 0) {
-            // Ini akan dieksekusi jika filter menghasilkan 0 suara
-            voiceSelect.innerHTML += '<option value="">Tidak ada suara kategori yang tersedia</option>';
-            throw new Error('Tidak ada suara kategori TTS/Voice Conversion/Singing yang ditemukan dengan API Key ini.');
+            // Ini akan dieksekusi jika API mengembalikan 0 suara total
+            voiceSelect.innerHTML += '<option value="">Tidak ada suara yang tersedia dari API</option>';
+            throw new Error('Tidak ada suara yang ditemukan dari API Uberduck.');
         }
 
-        ttsVoices.sort((a, b) => a.display_name.localeCompare(b.display_name));
+        // Pastikan suara memiliki properti yang diperlukan sebelum menambahkannya
+        ttsVoices.sort((a, b) => (a.display_name || '').localeCompare(b.display_name || '')); // Urutkan berdasarkan nama, tangani jika display_name undefined
         ttsVoices.forEach(voice => {
-            const option = document.createElement('option');
-            option.value = voice.name;
-            option.textContent = `${voice.display_name} (${voice.category})`;
-            voiceSelect.appendChild(option);
-            // Untuk debugging, bisa aktifkan ini untuk melihat setiap opsi yang ditambahkan:
-            // console.log("Menambahkan opsi suara:", option.textContent);
+            // Menambahkan pengecekan properti sebelum membuat opsi
+            if (voice.name && voice.display_name && voice.category) {
+                const option = document.createElement('option');
+                option.value = voice.name;
+                option.textContent = `${voice.display_name} (${voice.category})`;
+                voiceSelect.appendChild(option);
+            } else {
+                console.warn("Suara dengan format tidak lengkap diabaikan (kurang 'name', 'display_name', atau 'category'):", voice);
+            }
         });
         
         voiceSelect.disabled = false; // Aktifkan dropdown setelah suara dimuat
