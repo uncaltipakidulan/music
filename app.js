@@ -153,49 +153,59 @@ async function generateSpeech() {
     audioPlayer.load(); // Memuat ulang audio player
 
     try {
-        console.log("Mengirim permintaan text-to-speech ke Uberduck...");
-        console.log("Teks:", text);
-        console.log("Suara yang dipilih:", selectedVoice);
+        console.log("LANGKAH 1: Mengirim permintaan text-to-speech ke Uberduck...");
+        console.log("Teks yang akan dikirim:", text);
+        console.log("Suara yang dipilih untuk dikirim:", selectedVoice);
 
-        const response = await fetch('https://api.uberduck.ai/v1/text-to-speech', {
+        const fetchOptions = {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${BEARER_TOKEN}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                text: text, // Sesuai dengan contoh cURL di dokumentasi Uberduck
-                voice: selectedVoice // selectedVoice akan berisi voicemodel_uuid, ini yang dikirim ke API
-                // Anda juga bisa menambahkan "model": "polly_neural" jika diperlukan
-                // atau parameter lain dari dokumentasi, misalnya:
-                // "model": "uberduck_v2"
+                text: text,
+                voice: selectedVoice
             })
-        });
+        };
+        console.log("LANGKAH 2: Opsi Fetch:", fetchOptions);
 
-        // Debugging: Log status response sebelum cek response.ok
-        console.log("Uberduck text-to-speech API Response Status:", response.status, response.statusText);
+        const response = await fetch('https://api.uberduck.ai/v1/text-to-speech', fetchOptions);
+
+        console.log("LANGKAH 3: Respons HTTP dari Uberduck API (status):", response.status, response.statusText);
+        console.log("LANGKAH 4: response.ok adalah:", response.ok);
 
         if (!response.ok) {
             // Jika ada error di response (bukan 200 OK)
-            const errorData = await response.json().catch(() => ({ message: "Tidak dapat mem-parse respons error sebagai JSON." }));
-            // Debugging: Log error data dari API
-            console.error("Uberduck text-to-speech API Error Data (response not OK):", errorData);
+            console.log("LANGKAH 5a: Respons HTTP TIDAK OK. Memproses error data.");
+            const errorText = await response.text(); // Ambil respons sebagai teks terlebih dahulu
+            let errorData;
+            try {
+                errorData = JSON.parse(errorText); // Coba parse sebagai JSON
+            } catch (e) {
+                errorData = { message: "Tidak dapat mem-parse respons error sebagai JSON.", raw: errorText };
+            }
+            console.error("LANGKAH 5b: Uberduck text-to-speech API Error Data (response not OK):", errorData);
+
             if (response.status === 401) {
                 throw new Error(`Unauthorized: API Key Anda mungkin tidak valid atau tidak memiliki izin. (${JSON.stringify(errorData)})`);
             }
             if (response.status === 400 && errorData.detail && errorData.detail.includes("exceeds the maximum character limit")) {
                 throw new Error(`Teks terlalu panjang. Batas maksimal teks mungkin telah terlampaui.`);
             }
-            throw new Error(`Uberduck API error: ${response.status} - ${JSON_stringify(errorData)}`);
+            throw new Error(`Uberduck API error: ${response.status} - ${JSON.stringify(errorData)}`);
         }
 
+        // Jika responsnya OK (status 200)
+        console.log("LANGKAH 5c: Respons HTTP OK. Memproses data sukses.");
         const data = await response.json();
-        // Debugging: Log data yang diterima dari API sebelum cek UUID
-        console.log("Uberduck text-to-speech API Success Data:", data);
+        console.log("LANGKAH 6: Uberduck text-to-speech API Success Data:", data); // <<< LOG INI SANGAT PENTING
 
-        if (data.uuid) { // Baris 193
+        if (data.uuid) { // Baris 193 di skrip sebelumnya
+            console.log("LANGKAH 7: UUID ditemukan, memulai polling.");
             const audioUrl = await pollForAudio(data.uuid);
             if (audioUrl) {
+                console.log("LANGKAH 8: Audio URL ditemukan:", audioUrl);
                 audioPlayer.src = audioUrl;
                 audioPlayer.play();
                 audioUrlDisplay.textContent = `URL Audio: ${audioUrl}`;
@@ -205,7 +215,7 @@ async function generateSpeech() {
             }
         } else {
             // Debugging: Log kenapa UUID tidak ditemukan
-            console.error("UUID tidak ditemukan di respons Uberduck:", data);
+            console.error("LANGKAH 7: UUID tidak ditemukan di respons Uberduck:", data);
             throw new Error('Respons API tidak mengandung UUID untuk polling.');
         }
 
