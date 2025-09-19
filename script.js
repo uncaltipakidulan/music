@@ -29,8 +29,6 @@ function hideStatus() {
     statusMessage.style.display = 'none';
 }
 
-// ... (bagian atas script.js) ...
-
 // Fungsi untuk memuat daftar suara dari Uberduck API
 async function loadVoices() {
     showStatus('Memuat daftar suara...', 'info');
@@ -49,18 +47,19 @@ async function loadVoices() {
             throw new Error(`Gagal memuat suara: ${response.status} - ${JSON.stringify(errorData)}`);
         }
 
-        const apiResponse = await response.json(); // Ubah nama variabel untuk lebih jelas
-        console.log("Uberduck voices API response:", apiResponse); // console.log yang Anda lihat tadi
-        
+        const apiResponse = await response.json(); // Ini akan menjadi Object { total: 1069, voices: (...) }
+        console.log("Uberduck voices API response:", apiResponse);
+
         // Ambil array suara dari properti 'voices' di dalam objek respons
-        const allVoices = apiResponse.voices; // <--- PASTIKAN BARIS INI ADA!
-        
-        if (!Array.isArray(allVoices)) { // Pengecekan tambahan untuk memastikan itu array
-            throw new TypeError("Data 'voices' dalam respons API Uberduck bukan array seperti yang diharapkan.");
+        const allVoices = apiResponse.voices; // <--- INI PENTING! Sekarang allVoices adalah array
+
+        if (!Array.isArray(allVoices)) {
+            // Ini akan menangkap error jika ternyata apiResponse.voices bukan array
+            throw new TypeError("Properti 'voices' dalam respons API Uberduck bukan array.");
         }
 
         // Filter suara yang bisa digunakan untuk text-to-speech, voice_conversion, atau singing
-        const ttsVoices = allVoices.filter(v =>
+        const ttsVoices = allVoices.filter(v => // Sekarang .filter akan dipanggil pada array 'allVoices'
             v.category === 'tts' || v.category === 'voice_conversion' || v.category === 'singing'
         );
 
@@ -81,7 +80,6 @@ async function loadVoices() {
     }
 }
 
-// ... (sisa script.js tidak berubah) ...
 // Fungsi untuk menghasilkan suara dari teks menggunakan Uberduck API
 async function generateSpeech() {
     const text = textInput.value.trim();
