@@ -1,7 +1,7 @@
 // --- Ini adalah perubahan kecil untuk memicu commit ---
 // --- PENTING: Untuk keperluan demonstrasi, API Key diletakkan di sini. ---
 // --- UNTUK PRODUKSI, SANGAT DISARANKAN MENGGUNAKAN SERVERLESS FUNCTION SEBAGAI PROXY UNTUK KEAMANAN. ---
-const UBERDUCK_API_KEY = "bb622df48638253bf341e93208407317965e35b8fe1015ae6faf2dacbd051f59a0f46051a83cfb1a219e78fcf295a913"; // <<< GANTI DENGAN API Key Uberduck Anda di sini!
+const UBERDUCK_API_KEY = "2ba20ba477daa3a0112f4d2cb54d338f25feb101219d0a055602e9fb972ea4a685bf7b92ccd438a824646cebde99d4ab"; // <<< GANTI DENGAN API Key Uberduck Anda di sini!
 // Berdasarkan dokumentasi, autentikasi menggunakan Bearer Token
 const BEARER_TOKEN = UBERDUCK_API_KEY;
 
@@ -37,7 +37,7 @@ async function loadVoices() {
     generateButton.disabled = true; // Nonaktifkan juga tombol generate saat memuat
 
     try {
-        if (!BEARER_TOKEN || BEARER_TOKEN === "bb622df48638253bf341e93208407317965e35b8fe1015ae6faf2dacbd051f59a0f46051a83cfb1a219e78fcf295a913") {
+        if (!BEARER_TOKEN || BEARER_TOKEN === "2ba20ba477daa3a0112f4d2cb54d338f25feb101219d0a055602e9fb972ea4a685bf7b92ccd438a824646cebde99d4ab") {
             throw new Error('API Key Uberduck belum disetel. Harap ganti "YOUR_UBERDUCK_API_KEY" di script.js.');
         }
 
@@ -119,7 +119,7 @@ async function generateSpeech() {
     const text = textInput.value.trim();
     const selectedVoice = voiceSelect.value;
 
-    if (!BEARER_TOKEN || BEARER_TOKEN === "bb622df48638253bf341e93208407317965e35b8fe1015ae6faf2dacbd051f59a0f46051a83cfb1a219e78fcf295a913") {
+    if (!BEARER_TOKEN || BEARER_TOKEN === "2ba20ba477daa3a0112f4d2cb54d338f25feb101219d0a055602e9fb972ea4a685bf7b92ccd438a824646cebde99d4ab") {
         showStatus('Harap ganti "YOUR_UBERDUCK_API_KEY" di script.js dengan API Key Anda yang sebenarnya.', 'error');
         return;
     }
