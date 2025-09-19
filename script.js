@@ -1,6 +1,6 @@
 // --- PENTING: Untuk keperluan demonstrasi, API Key diletakkan di sini. ---
 // --- UNTUK PRODUKSI, SANGAT DISARANKAN MENGGUNAKAN SERVERLESS FUNCTION SEBAGAI PROXY UNTUK KEAMANAN. ---
-const UBERDUCK_API_KEY = "2ba20ba477daa3a0112f4d2cb54d338f25feb101219d0a055602e9fb972ea4a685bf7b92ccd438a824646cebde99d4ab"; // <<< GANTI DENGAN API Key Uberduck Anda di sini!
+const UBERDUCK_API_KEY = "YOUR_UBERDUCK_API_KEY"; // <<< GANTI DENGAN API Key Uberduck Anda di sini!
 
 // Berdasarkan dokumentasi, autentikasi menggunakan Bearer Token
 const BEARER_TOKEN = UBERDUCK_API_KEY;
@@ -33,7 +33,14 @@ function hideStatus() {
 async function loadVoices() {
     showStatus('Memuat daftar suara...', 'info');
     voiceSelect.innerHTML = '<option value="">Memuat suara...</option>'; // Reset & tampilkan loading
+    voiceSelect.disabled = true; // Nonaktifkan saat memuat
+    generateButton.disabled = true; // Nonaktifkan juga tombol generate saat memuat
+
     try {
+        if (!BEARER_TOKEN || BEARER_TOKEN === "YOUR_UBERDUCK_API_KEY") {
+            throw new Error('API Key Uberduck belum disetel. Harap ganti "YOUR_UBERDUCK_API_KEY" di script.js.');
+        }
+
         const response = await fetch('https://api.uberduck.ai/v1/voices', {
             method: 'GET',
             headers: {
@@ -44,38 +51,47 @@ async function loadVoices() {
 
         if (!response.ok) {
             const errorData = await response.json();
+            // Cek jika error 401 Unauthorized
+            if (response.status === 401) {
+                throw new Error(`Unauthorized: API Key Anda mungkin tidak valid atau tidak memiliki izin. (${errorData.detail || 'Periksa API Key'})`);
+            }
             throw new Error(`Gagal memuat suara: ${response.status} - ${JSON.stringify(errorData)}`);
         }
 
-        const apiResponse = await response.json();
-        console.log("Uberduck voices API response:", apiResponse); // Debugging: log seluruh respons API
+        const apiResponse = await response.json(); // Ini akan menjadi Object { total: 1069, voices: (...) }
+        console.log("Uberduck voices API response:", apiResponse);
 
-        const allVoices = apiResponse.voices; // Ambil array suara dari properti 'voices'
+        // Ambil array suara dari properti 'voices' di dalam objek respons
+        const allVoices = apiResponse.voices;
 
         if (!Array.isArray(allVoices)) {
-            throw new TypeError("Properti 'voices' dalam respons API Uberduck bukan array.");
+            throw new TypeError("Properti 'voices' dalam respons API Uberduck bukan array seperti yang diharapkan.");
         }
 
+        // Filter suara yang bisa digunakan untuk text-to-speech, voice_conversion, atau singing
         const ttsVoices = allVoices.filter(v =>
             v.category === 'tts' || v.category === 'voice_conversion' || v.category === 'singing'
         );
 
         voiceSelect.innerHTML = '<option value="">-- Pilih Suara --</option>'; // Opsi default
-        ttsVoices.sort((a, b) => a.display_name.localeCompare(b.display_name)); // Urutkan
+        ttsVoices.sort((a, b) => a.display_name.localeCompare(b.display_name)); // Urutkan berdasarkan nama
         ttsVoices.forEach(voice => {
             const option = document.createElement('option');
             option.value = voice.name;
             option.textContent = `${voice.display_name} (${voice.category})`;
             voiceSelect.appendChild(option);
         });
+        
+        voiceSelect.disabled = false; // Aktifkan dropdown setelah suara dimuat
+        generateButton.disabled = false; // Aktifkan tombol generate
         hideStatus();
-        generateButton.disabled = false; // <<< PENTING: PASTIKAN TOMBOL GENERATE AKTIF LAGI
+
     } catch (error) {
         console.error('Error loading voices:', error);
-        showStatus(`Gagal memuat suara: ${error.message}. Coba refresh halaman.`, 'error');
-        // <<< JANGAN NONAKTIFKAN voiceSelect atau generateButton di sini jika terjadi error loading
-        voiceSelect.innerHTML = '<option value="">Gagal memuat suara</option>'; // Biarkan opsi error ini sebagai satu-satunya
-        generateButton.disabled = true; // Nonaktifkan tombol generate saja
+        showStatus(`Gagal memuat suara: ${error.message}. Pastikan API Key benar & jaringan tersedia.`, 'error');
+        voiceSelect.innerHTML = '<option value="">Gagal memuat suara</option>';
+        voiceSelect.disabled = true; // Nonaktifkan dropdown jika gagal
+        generateButton.disabled = true; // Nonaktifkan tombol generate jika gagal
     }
 }
 
@@ -93,7 +109,7 @@ async function generateSpeech() {
         showStatus('Harap masukkan teks yang ingin diubah menjadi suara.', 'error');
         return;
     }
-    if (!selectedVoice) {
+    if (!selectedVoice || selectedVoice === "") {
         showStatus('Harap pilih suara.', 'error');
         return;
     }
@@ -123,7 +139,7 @@ async function generateSpeech() {
         if (!response.ok) {
             const errorData = await response.json();
             if (response.status === 401) {
-                throw new Error(`Unauthorized: API Key Anda mungkin tidak valid atau tidak memiliki izin. (${errorData.detail || ''})`);
+                throw new Error(`Unauthorized: API Key Anda mungkin tidak valid atau tidak memiliki izin. (${errorData.detail || 'Periksa API Key'})`);
             }
             if (response.status === 400 && errorData.detail && errorData.detail.includes("exceeds the maximum character limit")) {
                 throw new Error(`Teks terlalu panjang. Batas maksimal teks mungkin telah terlampaui.`);
@@ -173,7 +189,9 @@ async function pollForAudio(uuid) {
             });
 
             if (!response.ok) {
-                throw new Error(`Polling API error: ${response.status}`);
+                // Jangan lempar error di sini, biarkan terus polling jika bukan 404/500
+                // Cek jika ada status spesifik yang menunjukkan kegagalan permanen
+                // Untuk sementara, kita biarkan saja dan lanjutkan polling
             }
 
             const statusData = await response.json();
@@ -205,7 +223,7 @@ textInput.addEventListener('input', () => {
     if (currentLength > MAX_TEXT_LENGTH) {
         textInput.value = textInput.value.substring(0, MAX_TEXT_LENGTH);
         charCount.style.color = 'red';
-        showStatus(`Teks Anda melebihi batas ${MAX_TEXT_LENGTH} karakter.`, 'error');
+        showStatus(`Teks Anda melebihi batas ${MAX_TEXT_LENGTH} karakter (dibatasi).`, 'error');
     } else {
         charCount.style.color = '#666';
         hideStatus();
