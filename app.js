@@ -37,7 +37,7 @@ async function loadVoices() {
     generateButton.disabled = true; // Nonaktifkan juga tombol generate saat memuat
 
     try {
-        if (!BEARER_TOKEN || BEARER_TOKEN === "2ba20ba477daa3a0112f4d2cb54d338f25feb101219d0a055602e9fb972ea4a685bf7b92ccd438a824646cebde99d4ab") {
+        if (!BEARER_TOKEN || BEARER_TOKEN === "YOUR_UBERDUCK_API_KEY") {
             throw new Error('API Key Uberduck belum disetel. Harap ganti "YOUR_UBERDUCK_API_KEY" di script.js.');
         }
 
@@ -119,7 +119,7 @@ async function generateSpeech() {
     const text = textInput.value.trim();
     const selectedVoice = voiceSelect.value;
 
-    if (!BEARER_TOKEN || BEARER_TOKEN === "2ba20ba477daa3a0112f4d2cb54d338f25feb101219d0a055602e9fb972ea4a685bf7b92ccd438a824646cebde99d4ab") {
+    if (!BEARER_TOKEN || BEARER_TOKEN === "YOUR_UBERDUCK_API_KEY") {
         showStatus('Harap ganti "YOUR_UBERDUCK_API_KEY" di script.js dengan API Key Anda yang sebenarnya.', 'error');
         return;
     }
