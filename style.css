@@ -63,6 +63,15 @@ textarea:focus, select:focus {
     outline: none;
 }
 
+/* Gaya untuk elemen yang dinonaktifkan (disabled) */
+select:disabled, button:disabled, textarea:disabled {
+    background-color: #e9ecef; /* Warna abu-abu terang */
+    cursor: not-allowed;
+    border-color: #dee2e6;
+    box-shadow: none;
+    color: #6c757d; /* Warna teks agak abu-abu */
+}
+
 #charCount {
     display: block;
     text-align: right;
@@ -91,10 +100,13 @@ button:hover:not(:disabled) {
     transform: translateY(-2px);
 }
 
+/* Tombol disabled sudah ditangani di atas */
+/*
 button:disabled {
     background-color: #a0c9f1;
     cursor: not-allowed;
 }
+*/
 
 .message {
     margin-top: 20px;
@@ -162,3 +174,4 @@ audio {
         max-width: none;
     }
 }
+
